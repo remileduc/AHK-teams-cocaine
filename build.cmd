@@ -2,6 +2,7 @@
 setlocal
 :: Double-click to recompile teams-cocaine.ahk into teams-cocaine.exe.
 :: If teams-cocaine.exe is running it is stopped first and relaunched afterwards.
+:: Also run by GitHub Actions, where CI is defined and the pause is skipped.
 
 cd /d "%~dp0"
 
@@ -21,6 +22,14 @@ if not exist "%AHKBASE%" (
 )
 if not exist "%SRC%" (
     echo ERROR: "%SRC%" not found next to this script.
+    goto :fail
+)
+
+echo Validating %SRC% ...
+"%AHKBASE%" /validate /ErrorStdOut "%SRC%"
+if errorlevel 1 (
+    echo.
+    echo VALIDATION FAILED.
     goto :fail
 )
 
@@ -59,10 +68,10 @@ if "%WAS_RUNNING%"=="1" (
 )
 
 echo.
-pause
+if not defined CI pause
 exit /b 0
 
 :fail
 echo.
-pause
+if not defined CI pause
 exit /b 1

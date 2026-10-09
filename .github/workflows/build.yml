@@ -1,0 +1,73 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  OUT: teams-cocaine.exe
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      # Same two sources the AutoHotkey Dash uses on a desktop: winget for the v2
+      # interpreter and the newest Ahk2Exe release from GitHub (the v2 installer does
+      # not ship the compiler). Machine scope lands in C:\Program Files\AutoHotkey,
+      # the layout build.cmd expects.
+      - name: Install latest AutoHotkey v2 and Ahk2Exe
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          winget install --id AutoHotkey.AutoHotkey --exact --source winget --scope machine --silent `
+              --accept-source-agreements --accept-package-agreements --disable-interactivity
+
+          $ahkDir = "C:\Program Files\AutoHotkey"
+          $dl = "$env:RUNNER_TEMP\ahk2exe"
+          gh release download -R AutoHotkey/Ahk2Exe --pattern "*.zip" -D $dl
+          Expand-Archive -Path "$dl\*.zip" -DestinationPath $dl -Force
+          $ahk2exe = Get-ChildItem $dl -Recurse -Filter Ahk2Exe.exe | Select-Object -First 1
+          if (-not $ahk2exe) { throw "Ahk2Exe.exe not found in the Ahk2Exe release zip" }
+          New-Item -ItemType Directory -Force "$ahkDir\Compiler" | Out-Null
+          Copy-Item $ahk2exe.FullName "$ahkDir\Compiler\Ahk2Exe.exe"
+
+          foreach ($f in "$ahkDir\v2\AutoHotkey64.exe", "$ahkDir\Compiler\Ahk2Exe.exe") {
+              if (-not (Test-Path $f)) { throw "$f is missing" }
+              "$f : $((Get-Item $f).VersionInfo.FileVersion)"
+          }
+
+      - name: Build
+        shell: cmd
+        run: call build.cmd
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.OUT }}
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        if: github.ref_type == 'tag'
+        shell: cmd
+        run: |
+          rem The tag must match the version baked into the exe, or the release would lie.
+          for /f "tokens=2" %%v in ('findstr /B /C:";@Ahk2Exe-SetVersion " teams-cocaine.ahk') do set "VER=%%v"
+          if not "v%VER%"=="%GITHUB_REF_NAME%" (
+              echo Tag %GITHUB_REF_NAME% does not match ;@Ahk2Exe-SetVersion %VER%
+              exit /b 1
+          )
+          gh release create "%GITHUB_REF_NAME%" "%OUT%" --title "%GITHUB_REF_NAME%" --generate-notes
