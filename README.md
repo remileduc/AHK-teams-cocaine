@@ -23,7 +23,7 @@ Building
 
 After editing `teams-cocaine.ahk`, double-click `build.cmd` to recompile `teams-cocaine.exe`. It requires AutoHotkey v2 with the Ahk2Exe compiler installed.
 
-GitHub Actions builds the exe on every push with the current AutoHotkey v2 release from winget and the newest Ahk2Exe release from GitHub. Grab it from the workflow run artifacts, or from the [releases page](../../releases): pushing a `vX.Y.Z` tag that matches the `;@Ahk2Exe-SetVersion` line publishes a release with the exe attached.
+GitHub Actions builds the exe on every push with the current AutoHotkey v2 release from winget and the newest Ahk2Exe release from GitHub. Grab it from the workflow run artifacts, or from the [releases page](../../releases): pushing a `vX.Y.Z` tag that matches the `;@Ahk2Exe-SetVersion` line publishes a release with the exe and a `SHA256SUMS` file attached.
 
 License
 -------

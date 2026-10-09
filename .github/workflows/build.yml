@@ -52,10 +52,20 @@ jobs:
         shell: cmd
         run: call build.cmd
 
+      # sha256sum format (LF, two spaces) so "sha256sum -c SHA256SUMS" works as is.
+      - name: Checksum
+        shell: pwsh
+        run: |
+          $line = (Get-FileHash $env:OUT -Algorithm SHA256).Hash.ToLower() + "  " + $env:OUT
+          Set-Content -Path SHA256SUMS -Value "$line`n" -Encoding ascii -NoNewline
+          Get-Content SHA256SUMS
+
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ env.OUT }}
-          path: ${{ env.OUT }}
+          path: |
+            ${{ env.OUT }}
+            SHA256SUMS
           if-no-files-found: error
 
       - name: Release
@@ -70,4 +80,4 @@ jobs:
               echo Tag %GITHUB_REF_NAME% does not match ;@Ahk2Exe-SetVersion %VER%
               exit /b 1
           )
-          gh release create "%GITHUB_REF_NAME%" "%OUT%" --title "%GITHUB_REF_NAME%" --generate-notes
+          gh release create "%GITHUB_REF_NAME%" "%OUT%" SHA256SUMS --title "%GITHUB_REF_NAME%" --generate-notes
