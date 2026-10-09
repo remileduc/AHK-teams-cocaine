@@ -3,9 +3,9 @@
 #Warn
 
 ; Metadata baked into teams-cocaine.exe by Ahk2Exe (Explorer > Properties > Details).
-;@Ahk2Exe-SetName Keep Alive
-;@Ahk2Exe-SetDescription Keeps presence apps showing you as active and the PC awake
-;@Ahk2Exe-SetVersion 1.0.1
+;@Ahk2Exe-SetName teams-cocaine
+;@Ahk2Exe-SetDescription Keeps presence apps showing you as active and the PC awake (AutoHotkey %A_AhkVersion%)
+;@Ahk2Exe-SetVersion 1.1.0
 ;@Ahk2Exe-SetCopyright Copyright (c) 2026 Rémi Ducceschi - MIT License
 ;@Ahk2Exe-SetMainIcon coffee.ico
 

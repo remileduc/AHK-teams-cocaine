@@ -14,16 +14,16 @@ Both effects stop as soon as the script exits.
 Usage
 -----
 
-Run `teams-cocaine.exe`. It sits in the system tray as a coffee cup, with no window. Right-click the icon for **Pause** (a checkmark shows while paused; double-clicking the icon toggles it too) or **Exit**.
+Download `teams-cocaine.exe` from the [latest release](../../releases/latest) and run it. It sits in the system tray as a coffee cup, with no window. Right-click the icon for **Pause** (a checkmark shows while paused; double-clicking the icon toggles it too) or **Exit**.
 
-If you have AutoHotkey v2 installed you can run `teams-cocaine.ahk` directly instead.
+If you have AutoHotkey v2 installed you can run `teams-cocaine.ahk` (also attached to each release) directly instead.
 
 Building
 --------
 
 After editing `teams-cocaine.ahk`, double-click `build.cmd` to recompile `teams-cocaine.exe`. It requires AutoHotkey v2 with the Ahk2Exe compiler installed.
 
-GitHub Actions builds the exe on every push with the current AutoHotkey v2 release from winget and the newest Ahk2Exe release from GitHub. Grab it from the workflow run artifacts, or from the [releases page](../../releases): pushing a `vX.Y.Z` tag that matches the `;@Ahk2Exe-SetVersion` line publishes a release with the exe and a `SHA256SUMS` file attached.
+GitHub Actions builds the exe on every push with the current AutoHotkey v2 release from winget and the newest Ahk2Exe release from GitHub. Grab it from the workflow run artifacts, or from the [releases page](../../releases): pushing a `vX.Y.Z` tag that matches the `;@Ahk2Exe-SetVersion` line publishes a release with the exe, the script and a `SHA256SUMS` file attached.
 
 License
 -------

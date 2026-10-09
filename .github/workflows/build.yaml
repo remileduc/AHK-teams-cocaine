@@ -74,8 +74,9 @@ jobs:
       - name: Checksum
         id: checksum
         run: |
-          $sha256 = (Get-FileHash $env:OUT -Algorithm SHA256).Hash.ToLower()
-          Set-Content -Path SHA256SUMS -Value "$sha256  $env:OUT`n" -Encoding ascii -NoNewline
+          $lines = Get-FileHash $env:OUT, $env:SRC -Algorithm SHA256 | ForEach-Object { $_.Hash.ToLower() + "  " + (Split-Path $_.Path -Leaf) }
+          Set-Content -Path SHA256SUMS -Value (($lines -join "`n") + "`n") -Encoding ascii -NoNewline
+          $sha256 = $lines[0].Split(" ")[0]
           Get-Content SHA256SUMS
           "sha256=$sha256" >> $env:GITHUB_OUTPUT
 
@@ -109,28 +110,44 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${VT_API_KEY:-}" ]; then echo "VT_API_KEY secret is not set, skipping."; exit 0; fi
+          api=https://www.virustotal.com/api/v3
           report="https://www.virustotal.com/gui/file/$SHA256"
           vt() { curl -sS --fail -H "x-apikey: $VT_API_KEY" "$@"; }
+          echo "::notice::VirusTotal report (updates live while the scan runs): $report"
 
-          id=$(vt -F "file=@$OUT" https://www.virustotal.com/api/v3/files | jq -r .data.id)
-          for _ in $(seq 30); do
-              sleep 20
-              analysis=$(vt "https://www.virustotal.com/api/v3/analyses/$id")
-              status=$(jq -r .data.attributes.status <<<"$analysis")
-              [ "$status" = completed ] && break
-          done
-          if [ "$status" != completed ]; then echo "Analysis still $status after 10 min: $report"; exit 1; fi
+          # A byte-identical file (e.g. a rerun) is already known: reuse its verdict instead of
+          # queueing a re-analysis, which VT deprioritises and which can take far longer.
+          if known=$(vt "$api/files/$SHA256" 2>/dev/null); then
+              echo "File already known to VirusTotal, using its last analysis."
+              stats=$(jq .data.attributes.last_analysis_stats <<<"$known")
+              results=$(jq .data.attributes.last_analysis_results <<<"$known")
+          else
+              id=$(vt -F "file=@$OUT" "$api/files" | jq -r .data.id)
+              status=queued
+              for _ in $(seq 15); do
+                  sleep 20
+                  analysis=$(vt "$api/analyses/$id")
+                  status=$(jq -r .data.attributes.status <<<"$analysis")
+                  [ "$status" = completed ] && break
+              done
+              if [ "$status" != completed ]; then
+                  echo "::notice::Analysis still $status after 5 min, not waiting any longer: $report"
+                  exit 0
+              fi
+              stats=$(jq .data.attributes.stats <<<"$analysis")
+              results=$(jq .data.attributes.results <<<"$analysis")
+          fi
 
-          malicious=$(jq .data.attributes.stats.malicious <<<"$analysis")
-          suspicious=$(jq .data.attributes.stats.suspicious <<<"$analysis")
-          undetected=$(jq .data.attributes.stats.undetected <<<"$analysis")
+          malicious=$(jq .malicious <<<"$stats")
+          suspicious=$(jq .suspicious <<<"$stats")
+          undetected=$(jq .undetected <<<"$stats")
           {
               echo "### VirusTotal: $malicious malicious, $suspicious suspicious, $undetected clean"
               echo
               echo "$report"
               echo
-              jq -r '.data.attributes.results[] | select(.category == "malicious" or .category == "suspicious")
-                     | "- \(.engine_name): \(.result)"' <<<"$analysis"
+              jq -r '.[] | select(.category == "malicious" or .category == "suspicious")
+                     | "- \(.engine_name): \(.result)"' <<<"$results"
           } | tee -a "$GITHUB_STEP_SUMMARY"
           if [ "$malicious" -gt 0 ] || [ "$suspicious" -gt 0 ]; then
               echo "::warning::VirusTotal flagged $OUT ($malicious malicious, $suspicious suspicious): $report"
@@ -175,6 +192,8 @@ jobs:
           repo="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
           if [ "$VT_CONFIGURED" = true ]; then vt="[report](https://www.virustotal.com/gui/file/$SHA256)"; else vt="not scanned"; fi
           cat > RELEASE_NOTES.md <<NOTES
+          Download \`$OUT\` and run it. If AutoHotkey v2 is installed you can run \`$SRC\` directly instead.
+
           ## Build
 
           Built from [\`${GITHUB_SHA:0:12}\`]($repo/commit/$GITHUB_SHA) by [workflow run $GITHUB_RUN_NUMBER]($repo/actions/runs/$GITHUB_RUN_ID).
@@ -193,4 +212,4 @@ jobs:
       - name: Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" "$OUT" SHA256SUMS --title "$GITHUB_REF_NAME" --notes-file RELEASE_NOTES.md --generate-notes
+        run: gh release create "$GITHUB_REF_NAME" "$OUT" "$SRC" SHA256SUMS --title "$GITHUB_REF_NAME" --notes-file RELEASE_NOTES.md --generate-notes
