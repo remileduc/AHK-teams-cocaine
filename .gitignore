@@ -1,0 +1,6 @@
+# generated exe
+*.exe
+
+# claude stuff
+/.claude/
+/CLAUDE.md
