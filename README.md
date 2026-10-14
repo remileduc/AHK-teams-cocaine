@@ -14,7 +14,7 @@ Both effects stop as soon as the script exits.
 Usage
 -----
 
-Download `teams-cocaine.exe` from the [latest release](../../releases/latest) and run it. It sits in the system tray as a coffee cup, with no window. Right-click the icon for **Pause** (a checkmark shows while paused; double-clicking the icon toggles it too) or **Exit**.
+Download `teams-cocaine.exe` from the [latest release](../../releases/latest) and run it. It sits in the system tray as a coffee cup, with no window. Right-click the icon for **Pause** (the cup turns gray and a checkmark shows while paused; double-clicking the icon toggles it too) or **Exit**.
 
 If you have AutoHotkey v2 installed you can run `teams-cocaine.ahk` (also attached to each release) directly instead.
 
@@ -22,6 +22,10 @@ Building
 --------
 
 After editing `teams-cocaine.ahk`, double-click `build.cmd` to recompile `teams-cocaine.exe`. It requires AutoHotkey v2 with the Ahk2Exe compiler installed.
+
+`coffee-gray.ico`, the tray icon shown while paused, is generated from `coffee.ico`. If you change the icon, regenerate it with `python make-gray-icon.py coffee.ico coffee-gray.ico` (Python 3, standard library only).
+
+When the script is run uncompiled, pausing shows AutoHotkey's own red "H" pause icon instead of the gray cup, because the pause icon always comes from the running executable.
 
 GitHub Actions builds the exe on every push with the current AutoHotkey v2 release from winget and the newest Ahk2Exe release from GitHub. Grab it from the workflow run artifacts, or from the [releases page](../../releases): pushing a `vX.Y.Z` tag that matches the `;@Ahk2Exe-SetVersion` line publishes a release with the exe, the script and a `SHA256SUMS` file attached.
 
