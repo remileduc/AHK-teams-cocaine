@@ -5,7 +5,7 @@
 ; Metadata baked into teams-cocaine.exe by Ahk2Exe (Explorer > Properties > Details).
 ;@Ahk2Exe-SetName teams-cocaine
 ;@Ahk2Exe-SetDescription Keeps presence apps showing you as active and the PC awake (AutoHotkey %A_AhkVersion%)
-;@Ahk2Exe-SetVersion 1.1.0
+;@Ahk2Exe-SetVersion 1.2.0
 ;@Ahk2Exe-SetCopyright Copyright (c) 2026 Rémi Ducceschi - MIT License
 ;@Ahk2Exe-SetMainIcon coffee.ico
 ; Icon group 207 is what AutoHotkey shows in the tray while the script is paused
