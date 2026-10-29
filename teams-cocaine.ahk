@@ -42,6 +42,8 @@ A_TrayMenu.Add()
 A_TrayMenu.Add("Exit", (*) => ExitApp())
 A_TrayMenu.Default := "Pause"
 
+VERSION := ScriptVersion()
+
 OnExit((*) => SetActive(false))
 SetActive(true)
 
@@ -50,7 +52,7 @@ SetActive(on) {
     flags := ES_CONTINUOUS | (on ? ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED : 0)
     DllCall("kernel32\SetThreadExecutionState", "UInt", flags)
     SetTimer(KeepAwake, on ? NUDGE_INTERVAL_MS : 0)
-    A_IconTip := "Keep Alive - " (on ? "running" : "paused")
+    A_IconTip := "Keep Alive v" VERSION " - " (on ? "running" : "paused")
 }
 
 ; Runs in its own thread on top of the script's base thread, so Pause() acts on
@@ -70,4 +72,12 @@ TogglePause(*) {
 KeepAwake() {
     if (A_TimeIdle >= IDLE_THRESHOLD_MS)
         MouseMove(0, 0, 0, "R")
+}
+
+; The SetVersion directive above is the single source: the compiled exe carries it
+; as a version resource, an uncompiled run reads it back from this file.
+ScriptVersion() {
+    if A_IsCompiled   ; the resource holds four numbers, so "1.1.0" comes back as "1.1.0.0"
+        return RegExReplace(FileGetVersion(A_ScriptFullPath), "\.0$")
+    return RegExMatch(FileRead(A_ScriptFullPath), "m)^;@Ahk2Exe-SetVersion\s+(\S+)", &m) ? m[1] : "unknown"
 }
